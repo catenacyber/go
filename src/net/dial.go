@@ -6,6 +6,7 @@ package net
 
 import (
 	"context"
+	"fmt"
 	"internal/bytealg"
 	"internal/godebug"
 	"internal/nettrace"
@@ -367,6 +368,19 @@ func (d *Dialer) SetMultipathTCP(use bool) {
 	d.mptcpStatus.set(use)
 }
 
+type SanReportDial struct {
+	address string
+}
+
+func SanitizeAddress(address string) bool {
+	for i := 0; i < len(address); i++ {
+		if address[i] >= 0x80 {
+			return true
+		}
+	}
+	return false
+}
+
 // Dial connects to the address on the named network.
 //
 // Known networks are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only),
@@ -416,6 +430,10 @@ func (d *Dialer) SetMultipathTCP(use bool) {
 //
 // For Unix networks, the address must be a file system path.
 func Dial(network, address string) (Conn, error) {
+	if SanitizeAddress(address) {
+		fmt.Printf("lolo net.Dial %v %v\n", network, address)
+		panic(SanReportDial{address: address})
+	}
 	var d Dialer
 	return d.Dial(network, address)
 }

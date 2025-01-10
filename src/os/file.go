@@ -374,6 +374,21 @@ func Create(name string) (*File, error) {
 	return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666)
 }
 
+type SanReportFile struct {
+	name   string
+	reason string
+}
+
+func SanitizeFilename(name string) bool {
+	//TODO use env variable for disabling
+	for i := 0; i < len(name); i++ {
+		if name[i] >= 0x80 {
+			return true
+		}
+	}
+	return false
+}
+
 // OpenFile is the generalized open call; most users will use Open
 // or Create instead. It opens the named file with specified flag
 // (O_RDONLY etc.). If the file does not exist, and the O_CREATE flag
@@ -381,6 +396,20 @@ func Create(name string) (*File, error) {
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm FileMode) (*File, error) {
+	if (flag&(O_RDWR|O_WRONLY)) != 0 && SanitizeFilename(name) {
+		Stdout.Write([]byte("lolo os.Open write "))
+		Stdout.Write([]byte(name))
+		Stdout.Write([]byte(" "))
+		reason := ""
+		if (flag & O_RDWR) != 0 {
+			reason = "O_RDWR"
+		} else {
+			reason = "O_WRONLY"
+		}
+		Stdout.Write([]byte(reason))
+		Stdout.Write([]byte("\n"))
+		panic(SanReportFile{name: name, reason: reason})
+	}
 	testlog.Open(name)
 	f, err := openFileNolog(name, flag, perm)
 	if err != nil {

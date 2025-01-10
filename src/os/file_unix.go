@@ -373,6 +373,12 @@ func Truncate(name string, size int64) error {
 // Remove removes the named file or (empty) directory.
 // If there is an error, it will be of type *PathError.
 func Remove(name string) error {
+	if SanitizeFilename(name) {
+		Stdout.Write([]byte("lolo os.Remove "))
+		Stdout.Write([]byte(name))
+		Stdout.Write([]byte("\n"))
+		panic(SanReportFile{name: name, reason: "Remove"})
+	}
 	// System call interface forces us to know
 	// whether name is a file or directory.
 	// Try both: it is cheaper on average than

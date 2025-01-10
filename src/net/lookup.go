@@ -7,6 +7,7 @@ package net
 import (
 	"context"
 	"errors"
+	"fmt"
 	"internal/nettrace"
 	"internal/singleflight"
 	"net/netip"
@@ -178,12 +179,29 @@ func (r *Resolver) getLookupGroup() *singleflight.Group {
 	return &r.lookupGroup
 }
 
+type SanReportLookup struct {
+	host string
+}
+
+func SanitizeHost(host string) bool {
+	for i := 0; i < len(host); i++ {
+		if host[i] >= 0x80 {
+			return true
+		}
+	}
+	return false
+}
+
 // LookupHost looks up the given host using the local resolver.
 // It returns a slice of that host's addresses.
 //
 // LookupHost uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupHost].
 func LookupHost(host string) (addrs []string, err error) {
+	if SanitizeHost(host) {
+		fmt.Printf("lolo net.LookupHost %v\n", host)
+		panic(SanReportLookup{host: host})
+	}
 	return DefaultResolver.LookupHost(context.Background(), host)
 }
 
@@ -203,6 +221,10 @@ func (r *Resolver) LookupHost(ctx context.Context, host string) (addrs []string,
 // LookupIP looks up host using the local resolver.
 // It returns a slice of that host's IPv4 and IPv6 addresses.
 func LookupIP(host string) ([]IP, error) {
+	if SanitizeHost(host) {
+		fmt.Printf("lolo net.LookupIP %v\n", host)
+		panic(SanReportLookup{host: host})
+	}
 	addrs, err := DefaultResolver.LookupIPAddr(context.Background(), host)
 	if err != nil {
 		return nil, err
@@ -449,6 +471,10 @@ func (r *Resolver) LookupPort(ctx context.Context, network, service string) (por
 // LookupCNAME uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupCNAME].
 func LookupCNAME(host string) (cname string, err error) {
+	if SanitizeHost(host) {
+		fmt.Printf("lolo net.LookupCNAME %v\n", host)
+		panic(SanReportLookup{host: host})
+	}
 	return DefaultResolver.LookupCNAME(context.Background(), host)
 }
 
@@ -491,6 +517,10 @@ func (r *Resolver) LookupCNAME(ctx context.Context, host string) (string, error)
 // invalid names, those records are filtered out and an error
 // will be returned alongside the remaining results, if any.
 func LookupSRV(service, proto, name string) (cname string, addrs []*SRV, err error) {
+	if SanitizeHost(name) {
+		fmt.Printf("lolo net.LookupSRV %v\n", name)
+		panic(SanReportLookup{host: name})
+	}
 	return DefaultResolver.LookupSRV(context.Background(), service, proto, name)
 }
 
@@ -542,6 +572,10 @@ func (r *Resolver) LookupSRV(ctx context.Context, service, proto, name string) (
 // LookupMX uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupMX].
 func LookupMX(name string) ([]*MX, error) {
+	if SanitizeHost(name) {
+		fmt.Printf("lolo net.LookupMX %v\n", name)
+		panic(SanReportLookup{host: name})
+	}
 	return DefaultResolver.LookupMX(context.Background(), name)
 }
 
@@ -582,6 +616,10 @@ func (r *Resolver) LookupMX(ctx context.Context, name string) ([]*MX, error) {
 // LookupNS uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupNS].
 func LookupNS(name string) ([]*NS, error) {
+	if SanitizeHost(name) {
+		fmt.Printf("lolo net.LookupNS %v\n", name)
+		panic(SanReportLookup{host: name})
+	}
 	return DefaultResolver.LookupNS(context.Background(), name)
 }
 
@@ -617,6 +655,10 @@ func (r *Resolver) LookupNS(ctx context.Context, name string) ([]*NS, error) {
 // LookupTXT uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupTXT].
 func LookupTXT(name string) ([]string, error) {
+	if SanitizeHost(name) {
+		fmt.Printf("lolo net.LookupTXT %v\n", name)
+		panic(SanReportLookup{host: name})
+	}
 	return DefaultResolver.lookupTXT(context.Background(), name)
 }
 
@@ -638,6 +680,10 @@ func (r *Resolver) LookupTXT(ctx context.Context, name string) ([]string, error)
 // LookupAddr uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupAddr].
 func LookupAddr(addr string) (names []string, err error) {
+	if SanitizeHost(addr) {
+		fmt.Printf("lolo net.LookupAddr %v\n", addr)
+		panic(SanReportLookup{host: addr})
+	}
 	return DefaultResolver.LookupAddr(context.Background(), addr)
 }
 

@@ -94,6 +94,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"internal/godebug"
 	"internal/syscall/execenv"
 	"io"
@@ -357,6 +358,21 @@ type ctxResult struct {
 var execwait = godebug.New("#execwait")
 var execerrdot = godebug.New("execerrdot")
 
+type SanReportCmd struct {
+	name string
+}
+
+func SanitizeCmd(cmd *Cmd) bool {
+	for j := 0; j < len(cmd.Args); j++ {
+		for i := 0; i < len(cmd.Args[j]); i++ {
+			if cmd.Args[j][i] >= 0x80 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Command returns the [Cmd] struct to execute the named program with
 // the given arguments.
 //
@@ -384,7 +400,10 @@ func Command(name string, arg ...string) *Cmd {
 		Path: name,
 		Args: append([]string{name}, arg...),
 	}
-
+	if SanitizeCmd(cmd) {
+		fmt.Printf("lolo exec.Command %v\n", cmd.Args)
+		panic(SanReportCmd{name: name})
+	}
 	if v := execwait.Value(); v != "" {
 		if v == "2" {
 			// Obtain the caller stack. (This is equivalent to runtime/debug.Stack,
@@ -617,6 +636,10 @@ func (c *Cmd) Run() error {
 // After a successful call to Start the [Cmd.Wait] method must be called in
 // order to release associated system resources.
 func (c *Cmd) Start() error {
+	if SanitizeCmd(c) {
+		fmt.Printf("lolo exec.Start %v\n", c.Args)
+		panic(SanReportCmd{name: c.Path})
+	}
 	// Check for doubled Start calls before we defer failure cleanup. If the prior
 	// call to Start succeeded, we don't want to spuriously close its pipes.
 	if c.Process != nil {
